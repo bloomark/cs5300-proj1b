@@ -1,8 +1,12 @@
 package rpc;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.UUID;
 
@@ -39,11 +43,55 @@ public class RPCClient {
 		
 		String request_message = callId + DELIMITER + operation_code + DELIMITER + sessionId;
 		byte[] outbuf = new byte[MAX_PACKET_LENGTH];
+		outbuf = request_message.getBytes();
+		DatagramSocket rpc_socket = null;
 		
+		/*
+		 * Making a request to the server
+		 * Need to run through a list of servers and make a request to each one
+		 */
 		try{
-			DatagramSocket rpcSocket = new DatagramSocket();
-			//DatagramPacket send_pkt = new DatagramPacket(outbuf, );
+			rpc_socket = new DatagramSocket();
+			InetAddress server_address = InetAddress.getByName("127.0.0.1");
+			DatagramPacket send_pkt = new DatagramPacket(outbuf, outbuf.length, server_address, RPC_SERVER_PORT);
+			
+			rpc_socket.send(send_pkt);
 		} catch(SocketException e){
+			e.printStackTrace();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		/*
+		 * Waiting for a response from the server
+		 * If the callId received is not what was sent, need to wait for the response again
+		 * If the socket times out, update server status to down
+		 */
+		try{
+			String[] response_fields = null;
+			do{
+				rpc_socket.setSoTimeout(SOCKET_TIMEOUT);
+				byte[] inbuf = new byte[MAX_PACKET_LENGTH];
+				DatagramPacket rcv_pkt = new DatagramPacket(inbuf, inbuf.length);
+				
+				rpc_socket.receive(rcv_pkt);
+				
+				response_fields = new String(inbuf, "UTF-8").split(DELIMITER);
+			} while(!response_fields[0].equals(callId));
+		} catch(SocketTimeoutException e){
+			// TODO Auto-generated catch block
+			System.out.println("CLIENT serverReadClient response timed out");
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NullPointerException e){
 			e.printStackTrace();
 		}
 		

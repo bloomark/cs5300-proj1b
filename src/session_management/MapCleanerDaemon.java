@@ -18,8 +18,8 @@ public class MapCleanerDaemon extends TimerTask{
 				ArrayList<String> sessionList = new ArrayList<String>();
 				while(itr.hasNext()){
 					String sessionID = itr.next();
-					Timestamp ts = new Timestamp(System.currentTimeMillis());
-					if(SSMServlet.sessionMap.get(sessionID).getExpiresOn().before(ts)){
+					long ts = System.currentTimeMillis();
+					if(SSMServlet.sessionMap.get(sessionID).getExpiresOn() <= ts){
 						//Cookie has expired, delete it
 						sessionList.add(sessionID);
 					}

@@ -34,7 +34,7 @@
         <form method='POST' action="">
         	<div class='row'>
         		<input type='submit' name='btn-submit' value='Replace'>
-        		<input type='text' id='newMessage' name='newMessage'>
+        		<input type='text' id='newMessage' name='newMessage' maxLength='256'>
         	</div>
         	<div class='row'>
         		<input type='submit' name='btn-submit' value='Refresh'>

@@ -7,12 +7,12 @@ import session_management.SSMServlet;
 public class SessionTable {
 	int version;
 	String message;
-	Timestamp expiresOn;
+	long expiresOn;
 	
-	public SessionTable(int version, String message, Timestamp expiresOn){
+	public SessionTable(int version, String message, long expiresOn){
 		this.version = version;
 		this.message = message;
-		this.expiresOn = new Timestamp(System.currentTimeMillis() + SSMServlet.TIMEOUT);
+		this.expiresOn = expiresOn;
 	}
 	
 	public int getVersion(){
@@ -31,11 +31,11 @@ public class SessionTable {
 		this.message = message;
 	}
 	
-	public Timestamp getExpiresOn(){
+	public long getExpiresOn(){
 		return expiresOn;
 	}
 	
-	public void setExpiresOn(Timestamp expiresOn){
+	public void setExpiresOn(long expiresOn){
 		this.expiresOn = expiresOn;
 	}
 }

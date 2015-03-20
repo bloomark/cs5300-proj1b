@@ -14,6 +14,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import rpc.RPCClient;
+import rpc.RPCServer;
+
 /**
  * Servlet implementation class SSMServlet
  */
@@ -21,11 +24,11 @@ import javax.servlet.http.HttpServletResponse;
 public class SSMServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	public static long TIMEOUT = 5 * 1000; //Timeout in milliseconds
+	public static long TIMEOUT = 10 * 1000; //Timeout in seconds
 	public static String COOKIE_NAME = "CS5300PROJ1SESSION";
 	public static String globalSessionId = "0";
 	public static ConcurrentHashMap<String, SessionTable> sessionMap = new ConcurrentHashMap<String, SessionTable>();
-	public static long cleanerDaemonInterval = 10 * 1000;
+	public static long cleanerDaemonInterval = 60 * 1000;
 	   
     /**
      * @see HttpServlet#HttpServlet()
@@ -36,6 +39,10 @@ public class SSMServlet extends HttpServlet {
         System.out.println("Setting up cleaner tast...");
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new MapCleanerDaemon(), 5*1000, cleanerDaemonInterval);
+        System.out.println("Calling RPC Client...");
+        RPCServer rpc_server = new RPCServer();
+        rpc_server.start();
+        RPCClient.SessionReadClient("1");
     }
 
 	/**
@@ -45,7 +52,7 @@ public class SSMServlet extends HttpServlet {
 		// Session Data
 		String sessionID = null;
 		Integer version = 1;
-		Timestamp expiresOn = null;
+		long expiresOn = 0;
 		String cookieContent = null;
 		Cookie cookie = null;
 		
@@ -79,16 +86,19 @@ public class SSMServlet extends HttpServlet {
 				if(sessMap.containsKey(sessionID)){
 					//We know about this cookie
 					//Check timeout
-					Timestamp cookieTime = sessMap.get(sessionID).getExpiresOn();
-					Timestamp ts = new Timestamp(System.currentTimeMillis());
-					if(cookieTime.after(ts)){
+					long cookieTime = sessMap.get(sessionID).getExpiresOn();
+					long ts = System.currentTimeMillis();
+					if(cookieTime > ts){
 						//Cookie has not timed out
-						sessMap.get(sessionID).setExpiresOn(new Timestamp(System.currentTimeMillis() + TIMEOUT));
+						sessMap.get(sessionID).setExpiresOn(System.currentTimeMillis() + TIMEOUT);
 						if(action != null){
 							if(action.equals("Replace")){
 								//Replace was clicked
 								String newMessage = request.getParameter("newMessage");
 								if(newMessage != null){
+									if(newMessage.length() > 256){
+										newMessage = newMessage.substring(0, 255);
+									}
 								}
 								else{
 									newMessage = " ";
@@ -108,9 +118,6 @@ public class SSMServlet extends HttpServlet {
 					}
 					else{
 						//Cookie has expired, create a new one
-						//System.out.println("Timed out");
-						//System.out.println("Cookie Time = " + cookieTime.toString());
-						//System.out.println("Curr Time = " + ts.toString());
 						createNewCookie = true;
 					}
 				}
@@ -126,8 +133,8 @@ public class SSMServlet extends HttpServlet {
 				//sessionID = UUID.randomUUID().toString();
 				sessionID = getNewSessionId();
 				//System.out.println("New Session ID - " + sessionID);
-					//Increment timestamp by 60 seconds
-				expiresOn = new Timestamp(System.currentTimeMillis() + TIMEOUT);
+					//Increment timestamp by TIMEOUT milliseconds
+				expiresOn = System.currentTimeMillis() + TIMEOUT;
 				//System.out.println("Expires On - " + expiresOn.toString());
 				SessionTable newTableEntry = new SessionTable(1, "Hello, User!", expiresOn);
 				sessMap.put(sessionID, newTableEntry);
@@ -140,7 +147,7 @@ public class SSMServlet extends HttpServlet {
 		
 		//request.setAttribute("sessionID", sessionID);
 		//request.setAttribute("version", version);
-		request.setAttribute("expiresOn", sessMap.get(sessionID).getExpiresOn());
+		request.setAttribute("expiresOn", new Timestamp(sessMap.get(sessionID).getExpiresOn()));
 		request.setAttribute("message", sessMap.get(sessionID).getMessage());
 		request.getRequestDispatcher("index.jsp").forward(request, response);
 		return;

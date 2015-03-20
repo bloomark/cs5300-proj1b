@@ -21,7 +21,7 @@ public class RPCServer extends Thread{
 		} catch(SocketException e){
 			e.printStackTrace();
 		}
-		System.out.println("RPC Server initialized at Port " + rpc_server_socket.getPort() + "...");
+		System.out.println("SERVER Initialized at Port " + rpc_server_socket.getLocalPort() + "...");
 	}
 	
 	public void run(){
@@ -34,20 +34,26 @@ public class RPCServer extends Thread{
 				 */
 				byte[] inbuf = new byte[MAX_PACKET_LENGTH];
 				DatagramPacket recv_pkt = new DatagramPacket(inbuf, inbuf.length);
+				System.out.println("SERVER Waiting for client request");
 				rpc_server_socket.receive(recv_pkt);
 				
+				System.out.println("SERVER Received client request");
 				InetAddress returnAddr = recv_pkt.getAddress();
 				int return_port = recv_pkt.getPort();
 				
 				/*
-				 * request_fields[]
+				 * request_fields[] - Split the message received in the datagram on the DELIMITER
+				 * Indexes
 				 * [0] - callId
 				 * [1] - operation_code
 				 */
+				
 				String[] request_fields = new String(inbuf, "UTF-8").split(DELIMITER);
-				switch(Integer.valueOf(request_fields[0])){
+				switch(Integer.valueOf(request_fields[1])){
 				case 0:
 					//Session Read
+					// [2] - sessionId
+					System.out.println("SERVER Received sessionRead request for sessionId #" + request_fields[2]);
 					break;
 				case 1:
 					//Session Write
