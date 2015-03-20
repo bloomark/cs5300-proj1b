@@ -42,7 +42,7 @@ public class RPCClient {
 		
 		try{
 			DatagramSocket rpcSocket = new DatagramSocket();
-			DatagramPacket send_pkt = new DatagramPacket(outbuf, );
+			//DatagramPacket send_pkt = new DatagramPacket(outbuf, );
 		} catch(SocketException e){
 			e.printStackTrace();
 		}
