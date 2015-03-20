@@ -10,13 +10,13 @@ import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.UUID;
 
-import session_management.SessionTable;
+import session_management.SessionData;
 
 public class RPCClient {
 	public static int RPC_SERVER_PORT = 5300;
-	public static int SOCKET_TIMEOUT = 2 * 1000;
+	public static int SOCKET_TIMEOUT = 5 * 1000;
 	public static int MAX_PACKET_LENGTH = 512;
-	public static String DELIMITER = "_";
+	public static String DELIMITER = SessionData.DELIMITER;
 	
 	/*
 	 * I/P: sessionId for which we require data
@@ -32,15 +32,16 @@ public class RPCClient {
 	 * O/P: session data 
 	 * 		null if no response is received 
 	 */
-	public static SessionTable SessionReadClient(
-				String sessionId
+	public static String SessionReadClient(
+				String sessionId,
+				String server
 			){
 		//TODO SessionReadClient code
-		SessionTable existing_session_data = null;
-		
+		String new_session_data = null;
 		String callId = UUID.randomUUID().toString();
 		String operation_code = "0";
 		
+		System.out.println("CLIENT Building request string");
 		String request_message = callId + DELIMITER + operation_code + DELIMITER + sessionId;
 		byte[] outbuf = new byte[MAX_PACKET_LENGTH];
 		outbuf = request_message.getBytes();
@@ -52,10 +53,11 @@ public class RPCClient {
 		 */
 		try{
 			rpc_socket = new DatagramSocket();
-			InetAddress server_address = InetAddress.getByName("127.0.0.1");
+			InetAddress server_address = InetAddress.getByName(server);
 			DatagramPacket send_pkt = new DatagramPacket(outbuf, outbuf.length, server_address, RPC_SERVER_PORT);
 			
 			rpc_socket.send(send_pkt);
+			System.out.println("CLIENT Sent request " + request_message + " to server at " + server);
 		} catch(SocketException e){
 			e.printStackTrace();
 		} catch (UnknownHostException e) {
@@ -66,21 +68,25 @@ public class RPCClient {
 			e.printStackTrace();
 		}
 		
+		String[] response_fields = null;
+		
 		/*
 		 * Waiting for a response from the server
 		 * If the callId received is not what was sent, need to wait for the response again
 		 * If the socket times out, update server status to down
 		 */
 		try{
-			String[] response_fields = null;
+			System.out.println("Going to waiting for resp");
 			do{
 				rpc_socket.setSoTimeout(SOCKET_TIMEOUT);
 				byte[] inbuf = new byte[MAX_PACKET_LENGTH];
 				DatagramPacket rcv_pkt = new DatagramPacket(inbuf, inbuf.length);
 				
+				System.out.println("CLIENT Waiting for response/");
 				rpc_socket.receive(rcv_pkt);
 				
 				response_fields = new String(inbuf, "UTF-8").split(DELIMITER);
+				System.out.println("CLIENT Received response " + new String(inbuf, "UTF-8"));
 			} while(!response_fields[0].equals(callId));
 		} catch(SocketTimeoutException e){
 			// TODO Auto-generated catch block
@@ -95,7 +101,8 @@ public class RPCClient {
 			e.printStackTrace();
 		}
 		
-		return existing_session_data;
+		System.out.println("SessionReadClient returning " + response_fields[1] + DELIMITER + response_fields[2] + DELIMITER + response_fields[3]);
+		return response_fields[1] + DELIMITER + response_fields[2] + DELIMITER + response_fields[3];
 	}
 	
 	public static void SessionWriteClient(

@@ -27,7 +27,7 @@ public class SSMServlet extends HttpServlet {
 	public static long TIMEOUT = 10 * 1000; //Timeout in seconds
 	public static String COOKIE_NAME = "CS5300PROJ1SESSION";
 	public static String globalSessionId = "0";
-	public static ConcurrentHashMap<String, SessionTable> sessionMap = new ConcurrentHashMap<String, SessionTable>();
+	public static ConcurrentHashMap<String, SessionData> sessionMap = new ConcurrentHashMap<String, SessionData>();
 	public static long cleanerDaemonInterval = 60 * 1000;
 	   
     /**
@@ -36,13 +36,17 @@ public class SSMServlet extends HttpServlet {
     public SSMServlet() {
         super();
         // TODO Auto-generated constructor stub
-        System.out.println("Setting up cleaner tast...");
+        SessionData newTableEntry = new SessionData(1, "Hello, User!", System.currentTimeMillis() + 84000000);
+        sessionMap.put("100", newTableEntry);
+        
+        System.out.println("Setting up cleaner task...");
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new MapCleanerDaemon(), 5*1000, cleanerDaemonInterval);
         System.out.println("Calling RPC Client...");
         RPCServer rpc_server = new RPCServer();
         rpc_server.start();
-        RPCClient.SessionReadClient("1");
+        System.out.println("SERVLET Invoking RPC sessionReadClient");
+        System.out.println(readRemoteSessionData("100", "127.0.0.1", null));
     }
 
 	/**
@@ -58,7 +62,7 @@ public class SSMServlet extends HttpServlet {
 		
 		PrintWriter o = response.getWriter();
 		String action = request.getParameter("btn-submit");
-		ConcurrentHashMap<String, SessionTable> sessMap = getSessionMap();
+		ConcurrentHashMap<String, SessionData> sessMap = getSessionMap();
 		Boolean createNewCookie = true;
 		
 		synchronized(sessMap){
@@ -133,10 +137,10 @@ public class SSMServlet extends HttpServlet {
 				//sessionID = UUID.randomUUID().toString();
 				sessionID = getNewSessionId();
 				//System.out.println("New Session ID - " + sessionID);
-					//Increment timestamp by TIMEOUT milliseconds
+				//Increment timestamp by TIMEOUT milliseconds
 				expiresOn = System.currentTimeMillis() + TIMEOUT;
 				//System.out.println("Expires On - " + expiresOn.toString());
-				SessionTable newTableEntry = new SessionTable(1, "Hello, User!", expiresOn);
+				SessionData newTableEntry = new SessionData(1, "Hello, User!", expiresOn);
 				sessMap.put(sessionID, newTableEntry);
 			}
 			
@@ -161,12 +165,27 @@ public class SSMServlet extends HttpServlet {
 		doGet(request, response);
 	}
 
-	private ConcurrentHashMap<String, SessionTable> getSessionMap(){
+	private ConcurrentHashMap<String, SessionData> getSessionMap(){
 		return SSMServlet.sessionMap;
 	}
 	
 	private String getNewSessionId(){
 		globalSessionId = String.valueOf(Integer.valueOf(globalSessionId) + 1);
 		return globalSessionId;
+	}
+	
+	private SessionData readRemoteSessionData(String sessionId, String primary, String backup){
+		String new_session_string = null;
+		
+		new_session_string = RPCClient.SessionReadClient(sessionId, primary);
+		/*if(new_session_string == null){
+			new_session_string = RPCClient.SessionReadClient(sessionId, backup);
+			if(new_session_string == null){
+				return null;
+			}
+		}*/
+		
+		//We have session data in a string, convert into an object of sessionData and return
+		return new SessionData(new_session_string);
 	}
 }
