@@ -39,12 +39,14 @@ public class SSMServlet extends HttpServlet {
         SessionData newTableEntry = new SessionData(1, "Hello, User!", System.currentTimeMillis() + 84000000);
         sessionMap.put("100", newTableEntry);
         
-        System.out.println("Setting up cleaner task...");
+        System.out.println("SERVLET Setting up cleaner task...");
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new MapCleanerDaemon(), 5*1000, cleanerDaemonInterval);
-        System.out.println("Calling RPC Client...");
+        
+        System.out.println("SERVLET Starting RPC Server...");
         RPCServer rpc_server = new RPCServer();
         rpc_server.start();
+        
         System.out.println("SERVLET Invoking RPC sessionReadClient");
         System.out.println(readRemoteSessionData("100", "127.0.0.1", null));
     }
@@ -62,10 +64,10 @@ public class SSMServlet extends HttpServlet {
 		
 		PrintWriter o = response.getWriter();
 		String action = request.getParameter("btn-submit");
-		ConcurrentHashMap<String, SessionData> sessMap = getSessionMap();
+		//ConcurrentHashMap<String, SessionData> sessMap = getSessionMap();
 		Boolean createNewCookie = true;
 		
-		synchronized(sessMap){
+		synchronized(sessionMap){
 			//Check to see if a cookie exists
 			Cookie[] cookieList = request.getCookies();
 			
@@ -87,14 +89,14 @@ public class SSMServlet extends HttpServlet {
 				version = Integer.parseInt(stringList[1]);
 				version++;
 				
-				if(sessMap.containsKey(sessionID)){
+				if(sessionMap.containsKey(sessionID)){
 					//We know about this cookie
 					//Check timeout
-					long cookieTime = sessMap.get(sessionID).getExpiresOn();
+					long cookieTime = sessionMap.get(sessionID).getExpiresOn();
 					long ts = System.currentTimeMillis();
 					if(cookieTime > ts){
 						//Cookie has not timed out
-						sessMap.get(sessionID).setExpiresOn(System.currentTimeMillis() + TIMEOUT);
+						sessionMap.get(sessionID).setExpiresOn(System.currentTimeMillis() + TIMEOUT);
 						if(action != null){
 							if(action.equals("Replace")){
 								//Replace was clicked
@@ -107,14 +109,14 @@ public class SSMServlet extends HttpServlet {
 								else{
 									newMessage = " ";
 								}
-								sessMap.get(sessionID).setMessage(newMessage);
+								sessionMap.get(sessionID).setMessage(newMessage);
 							}
 							else if(action.equals("Refresh")){
 								//Refresh was clicked
 							}
 							else if(action.equals("Logout")){
 								//Logout was clicked
-								sessMap.remove(sessionID);
+								sessionMap.remove(sessionID);
 								o.println("<h1>Logged out</h1>");
 								return;
 							}
@@ -141,7 +143,7 @@ public class SSMServlet extends HttpServlet {
 				expiresOn = System.currentTimeMillis() + TIMEOUT;
 				//System.out.println("Expires On - " + expiresOn.toString());
 				SessionData newTableEntry = new SessionData(1, "Hello, User!", expiresOn);
-				sessMap.put(sessionID, newTableEntry);
+				sessionMap.put(sessionID, newTableEntry);
 			}
 			
 			cookieContent = sessionID + '_' + version;
@@ -151,8 +153,8 @@ public class SSMServlet extends HttpServlet {
 		
 		//request.setAttribute("sessionID", sessionID);
 		//request.setAttribute("version", version);
-		request.setAttribute("expiresOn", new Timestamp(sessMap.get(sessionID).getExpiresOn()));
-		request.setAttribute("message", sessMap.get(sessionID).getMessage());
+		request.setAttribute("expiresOn", new Timestamp(sessionMap.get(sessionID).getExpiresOn()));
+		request.setAttribute("message", sessionMap.get(sessionID).getMessage());
 		request.getRequestDispatcher("index.jsp").forward(request, response);
 		return;
 	}

@@ -81,20 +81,30 @@ public class RPCServer extends Thread{
 			response_string = request_fields[0] + DELIMITER + response_value;
 			outbuf = response_string.getBytes();
 			InetAddress client_address = recv_pkt.getAddress();
-			System.out.println("Server sending response string " + response_string + " to client IP "+ client_address);
+			System.out.println("SERVER sending response string " + response_string + " to client IP "+ client_address.toString() + ":" + recv_pkt.getPort());
 			DatagramPacket send_pkt = new DatagramPacket(outbuf, outbuf.length, client_address, recv_pkt.getPort());
+			try {
+				rpc_server_socket.send(send_pkt);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
 	private String sessionRead(String sessionId){
-		if(!SSMServlet.sessionMap.containsKey(sessionId)){
-			System.out.println(sessionId + " Not found");
-			return "";
+		System.out.println("SERVER Received read request for #" + sessionId);
+		synchronized(SSMServlet.sessionMap){
+			if(!SSMServlet.sessionMap.containsKey(sessionId)){
+				System.out.println("SERVER Not found" + sessionId + " Not found");
+				return "none";
+			}
+			
+			/*
+			 * Map has relevant data, just return toString of the data
+			 */
+			System.out.println("SERVER In sessionRead #" + sessionId + " is " + SSMServlet.sessionMap.get(sessionId).toString());
+			return SSMServlet.sessionMap.get(sessionId).toString();
 		}
-		/*
-		 * Map has relevant data, just return toString of the data
-		 */
-		System.out.println("In sessionRead " + sessionId + " is " + SSMServlet.sessionMap.get(sessionId).toString());
-		return SSMServlet.sessionMap.get(sessionId).toString();
 	}
 }

@@ -76,7 +76,7 @@ public class RPCClient {
 		 * If the socket times out, update server status to down
 		 */
 		try{
-			System.out.println("Going to waiting for resp");
+			System.out.println("CLIENT Waiting for response");
 			do{
 				rpc_socket.setSoTimeout(SOCKET_TIMEOUT);
 				byte[] inbuf = new byte[MAX_PACKET_LENGTH];
