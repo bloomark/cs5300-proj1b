@@ -10,7 +10,7 @@ public class MapCleanerDaemon extends TimerTask{
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		System.out.println("Running cleaner daemon");
+		System.out.println("Running cleaner daemon...");
 		
 		synchronized(SSMServlet.sessionMap){
 			if(SSMServlet.sessionMap != null){
@@ -26,7 +26,7 @@ public class MapCleanerDaemon extends TimerTask{
 				}
 				for(String sessionID : sessionList){
 					SSMServlet.sessionMap.remove(sessionID);
-					System.out.println("Removed session " + sessionID);
+					System.out.println("Removed session #" + sessionID);
 				}
 			}
 		}

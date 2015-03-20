@@ -21,10 +21,11 @@ import javax.servlet.http.HttpServletResponse;
 public class SSMServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	public static long TIMEOUT = 30 * 1000; //Timeout in milliseconds
+	public static long TIMEOUT = 5 * 1000; //Timeout in milliseconds
 	public static String COOKIE_NAME = "CS5300PROJ1SESSION";
 	public static String globalSessionId = "0";
 	public static ConcurrentHashMap<String, SessionTable> sessionMap = new ConcurrentHashMap<String, SessionTable>();
+	public static long cleanerDaemonInterval = 10 * 1000;
 	   
     /**
      * @see HttpServlet#HttpServlet()
@@ -32,9 +33,9 @@ public class SSMServlet extends HttpServlet {
     public SSMServlet() {
         super();
         // TODO Auto-generated constructor stub
-        System.out.println("Initializing cleaner");
+        System.out.println("Setting up cleaner tast...");
         Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new MapCleanerDaemon(), 5*1000, 10*1000);
+        timer.scheduleAtFixedRate(new MapCleanerDaemon(), 5*1000, cleanerDaemonInterval);
     }
 
 	/**
@@ -68,7 +69,7 @@ public class SSMServlet extends HttpServlet {
 			if(cookie != null){
 				//A cookie exists
 				createNewCookie = false;
-				System.out.println("A cookie exists");
+				//System.out.println("A cookie exists");
 				cookieContent = cookie.getValue();
 				String[] stringList = cookieContent.split("_");
 				sessionID = stringList[0];
@@ -107,9 +108,9 @@ public class SSMServlet extends HttpServlet {
 					}
 					else{
 						//Cookie has expired, create a new one
-						System.out.println("Timed out");
-						System.out.println("Cookie Time = " + cookieTime.toString());
-						System.out.println("Curr Time = " + ts.toString());
+						//System.out.println("Timed out");
+						//System.out.println("Cookie Time = " + cookieTime.toString());
+						//System.out.println("Curr Time = " + ts.toString());
 						createNewCookie = true;
 					}
 				}
@@ -120,14 +121,14 @@ public class SSMServlet extends HttpServlet {
 			}
 			
 			if(createNewCookie){
-				System.out.println("Creating new cookie");
+				//System.out.println("Creating new cookie");
 				version = 1;
 				//sessionID = UUID.randomUUID().toString();
 				sessionID = getNewSessionId();
-				System.out.println("New Session ID - " + sessionID);
+				//System.out.println("New Session ID - " + sessionID);
 					//Increment timestamp by 60 seconds
 				expiresOn = new Timestamp(System.currentTimeMillis() + TIMEOUT);
-				System.out.println("Expires On - " + expiresOn.toString());
+				//System.out.println("Expires On - " + expiresOn.toString());
 				SessionTable newTableEntry = new SessionTable(1, "Hello, User!", expiresOn);
 				sessMap.put(sessionID, newTableEntry);
 			}
