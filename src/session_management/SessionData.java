@@ -1,23 +1,31 @@
 package session_management;
 
-import java.sql.Timestamp;
-
-import session_management.SSMServlet;
-
 public class SessionData {
 	public static String DELIMITER = "_";
 	int version;
 	String message;
 	long expiresOn;
+	String primary;
+	String backup;
 	
 	public SessionData(int version, String message, long expiresOn){
 		this.version = version;
 		this.message = message;
 		this.expiresOn = expiresOn;
+		this.primary = "NULL";
+		this.backup = "NULL";
+	}
+	
+	public SessionData(int version, String message, long expiresOn, String primary, String backup){
+		this.version = version;
+		this.message = message;
+		this.expiresOn = expiresOn;
+		this.primary = primary;
+		this.backup = backup;
 	}
 	
 	public String toString(){
-		return String.valueOf(version) + DELIMITER + message + DELIMITER + String.valueOf(expiresOn);
+		return String.valueOf(version) + DELIMITER + message + DELIMITER + String.valueOf(expiresOn) + DELIMITER + primary + DELIMITER + backup;
 	}
 	
 	public SessionData(String session_data){
@@ -50,5 +58,21 @@ public class SessionData {
 	
 	public void setExpiresOn(long expiresOn){
 		this.expiresOn = expiresOn;
+	}
+	
+	public String getPrimary(){
+		return primary;
+	}
+	
+	public void setPrimary(String primary){
+		this.primary = primary;
+	}
+	
+	public String getBackup(){
+		return backup;
+	}
+	
+	public void setBackup(String backup){
+		this.backup = backup;
 	}
 }

@@ -7,8 +7,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
-import org.omg.PortableServer.REQUEST_PROCESSING_POLICY_ID;
-
 import session_management.SSMServlet;
 import session_management.SessionData;
 
@@ -49,8 +47,6 @@ public class RPCServer extends Thread{
 				rpc_server_socket.receive(recv_pkt);
 				
 				System.out.println("SERVER Received client request");
-				InetAddress returnAddr = recv_pkt.getAddress();
-				int return_port = recv_pkt.getPort();
 				
 				/*
 				 * request_fields[] - Split the message received in the datagram on the DELIMITER
@@ -58,15 +54,7 @@ public class RPCServer extends Thread{
 				 * [0] - callId
 				 * [1] - operation_code
 				 */
-				
-				//request_fields = new String(inbuf, "UTF-8").split(DELIMITER);
 				request_fields = sanitizeMessage(recv_pkt.getData());
-				/*String request_string = new String(recv_pkt.getData(), "UTF-8");
-				request_fields = request_string.split(DELIMITER);
-				
-				for(int i=0; i<request_fields.length; i++){
-					request_fields[i] = request_fields[i].trim();
-				}*/
 				
 				switch(Integer.valueOf(request_fields[1])){
 					case 0:
@@ -77,6 +65,10 @@ public class RPCServer extends Thread{
 						break;
 					case 1:
 						//Session Write
+						// [2] - sessionId
+						// [3] - sessionData in String format
+						System.out.println("SERVER Received sessionWrite request from server at " + recv_pkt.getAddress().getHostAddress() + "for sessiondata ("  + request_fields[2] +") " + request_fields[3] + DELIMITER + request_fields[4] + DELIMITER + request_fields[5] + DELIMITER + request_fields[6] + DELIMITER + request_fields[7]);
+						response_value = sessionWrite(request_fields[2], request_fields[3] + DELIMITER + request_fields[4] + DELIMITER + request_fields[5] + DELIMITER + request_fields[6] + DELIMITER + request_fields[7]);
 						break;
 					case 2:
 						//Exchange Views
@@ -112,10 +104,17 @@ public class RPCServer extends Thread{
 				return SSMServlet.sessionMap.get(sessionId).toString();
 			}
 			else {
-				System.out.println("SERVER Not found" + sessionId + " Not found");
-				return "";
+				System.out.println("SERVER sessionID #" + sessionId + " not found");
+				return "NULL";
 			}
 		}
+	}
+	
+	private String sessionWrite(String sessionId, String sessionData){
+		SessionData new_table_entry = new SessionData(sessionData);
+		SSMServlet.sessionMap.put(sessionId, new_table_entry);
+		
+		return "OK";
 	}
 	
 	private String[] sanitizeMessage(byte[] inbuf){

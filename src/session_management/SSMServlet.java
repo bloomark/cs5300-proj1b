@@ -23,7 +23,8 @@ import rpc.RPCServer;
 @WebServlet("/SSMServlet")
 public class SSMServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	
+
+	public static long DELTA = 1 * 1000;
 	public static long TIMEOUT = 10 * 1000; //Timeout in seconds
 	public static String COOKIE_NAME = "CS5300PROJ1SESSION";
 	public static String globalSessionId = "0";
@@ -46,9 +47,6 @@ public class SSMServlet extends HttpServlet {
         System.out.println("SERVLET Starting RPC Server...");
         RPCServer rpc_server = new RPCServer();
         rpc_server.start();
-        
-        System.out.println("SERVLET Invoking RPC sessionReadClient");
-        System.out.println("readRemoteSessionData(\"100\", \"127.0.0.1\", null) returned " + readRemoteSessionData("100", "127.0.0.1", null));
     }
 
 	/**
@@ -64,7 +62,6 @@ public class SSMServlet extends HttpServlet {
 		
 		PrintWriter o = response.getWriter();
 		String action = request.getParameter("btn-submit");
-		//ConcurrentHashMap<String, SessionData> sessMap = getSessionMap();
 		Boolean createNewCookie = true;
 		
 		synchronized(sessionMap){
@@ -167,10 +164,6 @@ public class SSMServlet extends HttpServlet {
 		doGet(request, response);
 	}
 
-	private ConcurrentHashMap<String, SessionData> getSessionMap(){
-		return SSMServlet.sessionMap;
-	}
-	
 	private String getNewSessionId(){
 		globalSessionId = String.valueOf(Integer.valueOf(globalSessionId) + 1);
 		return globalSessionId;
@@ -180,7 +173,7 @@ public class SSMServlet extends HttpServlet {
 		String new_session_string = null;
 		
 		new_session_string = RPCClient.SessionReadClient(sessionId, primary);
-		if(new_session_string.equals("")){
+		if(new_session_string.trim().equals("NULL")){
 			return null;
 			/*new_session_string = RPCClient.SessionReadClient(sessionId, backup);
 			if(new_session_string == null){
@@ -190,5 +183,22 @@ public class SSMServlet extends HttpServlet {
 		
 		//We have session data in a string, convert into an object of sessionData and return
 		return new SessionData(new_session_string);
+	}
+	
+	private String writeRemoteSessionData(String sessionId, SessionData sessionData){
+		/*
+		 * Pick a random server from the view, for now lets make it 127.0.0.1
+		 * String server = random_entry_from_view
+		 */
+		String server = "127.0.0.1";
+		sessionData.expiresOn = System.currentTimeMillis() + TIMEOUT + DELTA;
+		String result = RPCClient.SessionWriteClient(sessionId, sessionData.toString(), server);
+		
+		if(result.trim().equals("OK")){
+			return "OK";
+		}
+		else{
+			return null;
+		}
 	}
 }
