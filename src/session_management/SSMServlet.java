@@ -48,15 +48,15 @@ public class SSMServlet extends HttpServlet {
         RPCServer rpc_server = new RPCServer();
         rpc_server.start();
         
-        /*Test for sessionWrite
+        /*Test for sessionWrite*/
         SessionData write_data = new SessionData(99, "Foo", System.currentTimeMillis());
         String write_response = writeRemoteSessionData("105", write_data);
         if(write_response.equals("OK")){
         	System.out.println("TEST Object at 105 is " + sessionMap.get("105").toString());
         }
         else{
-        	System.out.println("TEST sessionWrite failed");
-        }*/
+        	System.out.println("TEST sessionWrite FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
         
         /*Test for sessionRead
         
@@ -65,14 +65,14 @@ public class SSMServlet extends HttpServlet {
         sessionMap.put("100", new_entry);
         SessionData read_response = readRemoteSessionData("100", "127.0.0.1", "null");
         if(read_response == null){
-        	System.out.println("TEST sessionReadClient failed!");
+        	System.out.println("TEST sessionRead FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         } else{
         	System.out.println("TEST Received " + read_response.toString());
         }
         
         read_response = readRemoteSessionData("101", "127.0.0.1", "null");
         if(read_response != null){
-        	System.out.println("TEST sessionReadClient failed!");
+        	System.out.println("TEST sessionRead FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
     }
 
