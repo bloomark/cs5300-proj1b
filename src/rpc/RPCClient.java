@@ -44,6 +44,28 @@ public class RPCClient {
 		String request_message = callId + DELIMITER + operation_code + DELIMITER + sessionId;
 		byte[] outbuf = new byte[MAX_PACKET_LENGTH];
 		outbuf = request_message.getBytes();
+		
+		return RPC(callId, server, outbuf);
+	}
+	
+	public static String SessionWriteClient(
+				String sessionId,
+				String sessionData,
+				String server
+			){
+		//TODO SessionWriteClient code
+		String callId = UUID.randomUUID().toString();
+		String operation_code = "1";
+		
+		System.out.println("CLIENT Building request string");
+		String request_message = callId + DELIMITER + operation_code + DELIMITER + sessionId + DELIMITER + sessionData;
+		byte[] outbuf = new byte[MAX_PACKET_LENGTH];
+		outbuf = request_message.getBytes();
+		
+		return RPC(callId, server, outbuf);
+	}
+	
+	public static String RPC(String callId, String server, byte[] outbuf){
 		DatagramSocket rpc_socket = null;
 		
 		/*
@@ -56,7 +78,7 @@ public class RPCClient {
 			DatagramPacket send_pkt = new DatagramPacket(outbuf, outbuf.length, server_address, RPC_SERVER_PORT);
 			
 			rpc_socket.send(send_pkt);
-			System.out.println("CLIENT Sent request " + request_message + " to server at " + server);
+			System.out.println("CLIENT Sent request " + new String(outbuf) + " to server at " + server);
 		} catch(SocketException e){
 			e.printStackTrace();
 		} catch (UnknownHostException e) {
@@ -101,81 +123,7 @@ public class RPCClient {
 		}
 		
 		rpc_socket.close();
-		System.out.println("CLIENT ReadClient returning " + response_fields[1]);
-		return response_fields[1];
-	}
-	
-	public static String SessionWriteClient(
-				String sessionId,
-				String sessionData,
-				String server
-			){
-		//TODO SessionWriteClient code
-		String callId = UUID.randomUUID().toString();
-		String operation_code = "1";
-		
-		System.out.println("CLIENT Building request string");
-		String request_message = callId + DELIMITER + operation_code + DELIMITER + sessionId + DELIMITER + sessionData;
-		byte[] outbuf = new byte[MAX_PACKET_LENGTH];
-		outbuf = request_message.getBytes();
-		DatagramSocket rpc_socket = null;
-		
-		/*
-		 * Making a request to the server
-		 * Need to run through a list of servers and make a request to each one
-		 */
-		try{
-			rpc_socket = new DatagramSocket();
-			InetAddress server_address = InetAddress.getByName(server);
-			DatagramPacket send_pkt = new DatagramPacket(outbuf, outbuf.length, server_address, RPC_SERVER_PORT);
-			
-			rpc_socket.send(send_pkt);
-			System.out.println("CLIENT Sent request " + request_message + " to server at " + server);
-		} catch(SocketException e){
-			e.printStackTrace();
-		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		String[] response_fields = null;
-		
-		/*
-		 * Waiting for a response from the server
-		 * If the callId received is not what was sent, need to wait for the response again
-		 * If the socket times out, update server status to down
-		 */
-		try{
-			System.out.println("CLIENT Waiting for response");
-			do{
-				rpc_socket.setSoTimeout(SOCKET_TIMEOUT);
-				byte[] inbuf = new byte[MAX_PACKET_LENGTH];
-				DatagramPacket rcv_pkt = new DatagramPacket(inbuf, inbuf.length);
-				
-				System.out.println("CLIENT Waiting for response/");
-				rpc_socket.receive(rcv_pkt);
-				
-				response_fields = new String(inbuf, "UTF-8").split(DELIMITER, 2);
-				System.out.println("CLIENT Received response " + new String(inbuf, "UTF-8"));
-			} while(!response_fields[0].equals(callId));
-		} catch(SocketTimeoutException e){
-			// TODO Auto-generated catch block
-			System.out.println("CLIENT serverWriteClient response timed out");
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NullPointerException e){
-			e.printStackTrace();
-		}
-		
-		rpc_socket.close();
-		System.out.println("CLIENT WriteClient returning " + response_fields[1]);
+		System.out.println("CLIENT Returning " + response_fields[1]);
 		return response_fields[1];
 	}
 	

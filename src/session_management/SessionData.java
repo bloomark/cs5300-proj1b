@@ -34,6 +34,8 @@ public class SessionData {
 		this.version = Integer.valueOf(data_fields[0].trim());
 		this.message = data_fields[1].trim();
 		this.expiresOn = Long.valueOf(data_fields[2].trim());
+		this.primary = data_fields[3].trim();
+		this.backup = data_fields[4].trim(); 
 	}
 	
 	public int getVersion(){
