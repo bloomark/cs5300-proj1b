@@ -48,7 +48,7 @@ public class SSMServlet extends HttpServlet {
         rpc_server.start();
         
         System.out.println("SERVLET Invoking RPC sessionReadClient");
-        System.out.println("readRemoteSessionData(\"100\", \"127.0.0.1\", null) - " + readRemoteSessionData("100", "127.0.0.1", null));
+        System.out.println("readRemoteSessionData(\"100\", \"127.0.0.1\", null) returned " + readRemoteSessionData("100", "127.0.0.1", null));
     }
 
 	/**
