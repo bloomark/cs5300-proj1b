@@ -23,9 +23,9 @@ public class SessionData {
 	public SessionData(String session_data){
 		String[] data_fields = session_data.split(DELIMITER);
 		
-		this.version = Integer.valueOf(data_fields[0]);
-		this.message = data_fields[1];
-		this.expiresOn = Long.valueOf(data_fields[2]);
+		this.version = Integer.valueOf(data_fields[0].trim());
+		this.message = data_fields[1].trim();
+		this.expiresOn = Long.valueOf(data_fields[2].trim());
 	}
 	
 	public int getVersion(){

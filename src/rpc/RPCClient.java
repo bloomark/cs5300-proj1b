@@ -101,7 +101,7 @@ public class RPCClient {
 			e.printStackTrace();
 		}
 		
-		System.out.println("SessionReadClient returning " + response_fields[1] + DELIMITER + response_fields[2] + DELIMITER + response_fields[3]);
+		System.out.println("CLIENT ReadClient returning " + response_fields[1] + DELIMITER + response_fields[2] + DELIMITER + response_fields[3]);
 		return response_fields[1] + DELIMITER + response_fields[2] + DELIMITER + response_fields[3];
 	}
 	

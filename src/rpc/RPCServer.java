@@ -1,6 +1,7 @@
 package rpc;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -58,7 +59,15 @@ public class RPCServer extends Thread{
 				 * [1] - operation_code
 				 */
 				
-				request_fields = new String(inbuf, "UTF-8").split(DELIMITER);
+				//request_fields = new String(inbuf, "UTF-8").split(DELIMITER);
+				request_fields = sanitizeMessage(recv_pkt.getData());
+				/*String request_string = new String(recv_pkt.getData(), "UTF-8");
+				request_fields = request_string.split(DELIMITER);
+				
+				for(int i=0; i<request_fields.length; i++){
+					request_fields[i] = request_fields[i].trim();
+				}*/
+				
 				switch(Integer.valueOf(request_fields[1])){
 					case 0:
 						//Session Read
@@ -93,18 +102,37 @@ public class RPCServer extends Thread{
 	}
 	
 	private String sessionRead(String sessionId){
-		System.out.println("SERVER Received read request for #" + sessionId);
+		System.out.println("SERVER Received read request for #" + sessionId + "tralalala");
 		synchronized(SSMServlet.sessionMap){
-			if(!SSMServlet.sessionMap.containsKey(sessionId)){
-				System.out.println("SERVER Not found" + sessionId + " Not found");
-				return "none";
+			if(SSMServlet.sessionMap.containsKey(sessionId)){
+				/*
+				 * Map has relevant data, just return toString of the data
+				 */
+				System.out.println("SERVER In sessionRead #" + sessionId + " is " + SSMServlet.sessionMap.get(sessionId).toString());
+				return SSMServlet.sessionMap.get(sessionId).toString();
 			}
-			
-			/*
-			 * Map has relevant data, just return toString of the data
-			 */
-			System.out.println("SERVER In sessionRead #" + sessionId + " is " + SSMServlet.sessionMap.get(sessionId).toString());
-			return SSMServlet.sessionMap.get(sessionId).toString();
+			else {
+				System.out.println("SERVER Not found" + sessionId + " Not found");
+				return "";
+			}
 		}
+	}
+	
+	private String[] sanitizeMessage(byte[] inbuf){
+		String request_string = null;
+		try {
+			request_string = new String(inbuf, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String[] request_fields = request_string.split(DELIMITER);
+		
+		for(int i=0; i<request_fields.length; i++){
+			request_fields[i] = request_fields[i].trim();
+		}
+		
+		return request_fields;
 	}
 }

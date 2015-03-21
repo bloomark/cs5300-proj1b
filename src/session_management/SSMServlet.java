@@ -36,7 +36,7 @@ public class SSMServlet extends HttpServlet {
     public SSMServlet() {
         super();
         // TODO Auto-generated constructor stub
-        SessionData newTableEntry = new SessionData(1, "Hello, User!", System.currentTimeMillis() + 84000000);
+        SessionData newTableEntry = new SessionData(1, "deadbeef!", System.currentTimeMillis() + 84000000);
         sessionMap.put("100", newTableEntry);
         
         System.out.println("SERVLET Setting up cleaner task...");
@@ -48,7 +48,7 @@ public class SSMServlet extends HttpServlet {
         rpc_server.start();
         
         System.out.println("SERVLET Invoking RPC sessionReadClient");
-        System.out.println(readRemoteSessionData("100", "127.0.0.1", null));
+        System.out.println("readRemoteSessionData(\"100\", \"127.0.0.1\", null) - " + readRemoteSessionData("100", "127.0.0.1", null));
     }
 
 	/**
@@ -180,12 +180,13 @@ public class SSMServlet extends HttpServlet {
 		String new_session_string = null;
 		
 		new_session_string = RPCClient.SessionReadClient(sessionId, primary);
-		/*if(new_session_string == null){
-			new_session_string = RPCClient.SessionReadClient(sessionId, backup);
+		if(new_session_string.equals("")){
+			return null;
+			/*new_session_string = RPCClient.SessionReadClient(sessionId, backup);
 			if(new_session_string == null){
 				return null;
-			}
-		}*/
+			}*/
+		}
 		
 		//We have session data in a string, convert into an object of sessionData and return
 		return new SessionData(new_session_string);
