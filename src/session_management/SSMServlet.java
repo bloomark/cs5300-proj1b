@@ -12,6 +12,7 @@ import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Exchanger;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.Cookie;
@@ -25,12 +26,12 @@ import rpc.RPCServer;
 /**
  * Servlet implementation class SSMServlet
  */
-@WebServlet("/SSMServlet")
+@WebServlet(value = "/SSMServlet", loadOnStartup = 1)
 public class SSMServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
 	public static long DELTA = 1 * 1000;
-	public static long TIMEOUT = 10 * 1000; //Timeout in seconds
+	public static long TIMEOUT = 10 * 1000; //Timeout in milliseconds
 	public static String COOKIE_NAME = "CS5300PROJ1SESSION";
 	public static String globalSessionId = "0";
 	public static ConcurrentHashMap<String, SessionData> sessionMap = new ConcurrentHashMap<String, SessionData>();
@@ -39,7 +40,12 @@ public class SSMServlet extends HttpServlet {
 	public static String network_address = null;
 	public static String DELIMITER = SessionData.DELIMITER;
 	
-    /**
+	@Override
+	public void init(ServletConfig config) throws ServletException {
+		
+	}
+	
+	/**
      * @see HttpServlet#HttpServlet()
      */
     public SSMServlet() {
@@ -64,7 +70,9 @@ public class SSMServlet extends HttpServlet {
         rpc_server.start();
         
         new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
-        serverViewTable.serverViewTable.put("54.152.93.46", new_view_entry);
+        serverViewTable.serverViewTable.put("54.152.48.225", new_view_entry);
+        new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        serverViewTable.serverViewTable.put("54.172.159.86", new_view_entry);
         
         /*
          * Test for sessionWrite
@@ -151,6 +159,19 @@ public class SSMServlet extends HttpServlet {
 				sessionID = stringList[0];
 				version = Integer.parseInt(stringList[1]);
 				version++;
+				primary = stringList[2].trim();
+				backup = stringList[3].trim();
+				
+				if(!primary.equals(network_address) && !backup.equals(network_address)){
+					sessionMap.remove(sessionID);
+					SessionData remote_entry = readRemoteSessionData(sessionID, primary, backup);
+					if(remote_entry == null){
+						createNewCookie = true;
+					}
+					else{
+						sessionMap.put(sessionID, remote_entry);
+					}
+				}
 				
 				if(sessionMap.containsKey(sessionID)){
 					//We know about this cookie
@@ -180,6 +201,10 @@ public class SSMServlet extends HttpServlet {
 							else if(action.equals("Logout")){
 								//Logout was clicked
 								sessionMap.remove(sessionID);
+								cookieContent = sessionID + DELIMITER + version + DELIMITER + "NULL" + DELIMITER + "NULL";
+								Cookie session = new Cookie(COOKIE_NAME, cookieContent);
+								session.setMaxAge(0);
+								response.addCookie(session);
 								o.println("<h1>Logged out</h1>");
 								return;
 							}
@@ -209,6 +234,7 @@ public class SSMServlet extends HttpServlet {
 			
 			cookieContent = sessionID + DELIMITER + version + DELIMITER + network_address + DELIMITER + backup;
 			Cookie session = new Cookie(COOKIE_NAME, cookieContent);
+			session.setMaxAge((int)(TIMEOUT/1000));
 			response.addCookie(session);
 		}
 		
@@ -236,13 +262,16 @@ public class SSMServlet extends HttpServlet {
 	private SessionData readRemoteSessionData(String sessionId, String primary, String backup){
 		String new_session_string = null;
 		
-		new_session_string = RPCClient.SessionReadClient(sessionId, primary).trim();
-		if(new_session_string.equals("NULL") || new_session_string.equals("ERROR")){
-			return null;
-			/*new_session_string = RPCClient.SessionReadClient(sessionId, backup);
-			if(new_session_string == null){
-				return null;
-			}*/
+		if(!primary.equals("NULL")){
+			new_session_string = RPCClient.SessionReadClient(sessionId, primary).trim();
+			if(new_session_string.equals("NULL") || new_session_string.equals("ERROR")){
+				if(!backup.equals("NULL")){
+					new_session_string = RPCClient.SessionReadClient(sessionId, backup).trim();
+					if(new_session_string.equals("NULL") || new_session_string.equals("ERROR")){
+						return null;
+					}
+				}
+			}
 		}
 		
 		//We have session data in a string, convert into an object of sessionData and return
