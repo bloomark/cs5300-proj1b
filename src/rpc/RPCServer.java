@@ -67,11 +67,15 @@ public class RPCServer extends Thread{
 						//Session Write
 						// [2] - sessionId
 						// [3] - sessionData in String format
-						System.out.println("SERVER Received sessionWrite request from server at " + recv_pkt.getAddress().getHostAddress() + "for sessiondata ("  + request_fields[2] +") " + request_fields[3] + DELIMITER + request_fields[4] + DELIMITER + request_fields[5] + DELIMITER + request_fields[6] + DELIMITER + request_fields[7]);
-						response_value = sessionWrite(request_fields[2], request_fields[3] + DELIMITER + request_fields[4] + DELIMITER + request_fields[5] + DELIMITER + request_fields[6] + DELIMITER + request_fields[7]);
+						System.out.println("SERVER Received sessionWrite request from server at " + recv_pkt.getAddress().getHostAddress() + "for sessiondata ("  + request_fields[2] +") " + request_fields[3] + DELIMITER + request_fields[4] + DELIMITER + request_fields[5]);
+						response_value = sessionWrite(request_fields[2], request_fields[3] + DELIMITER + request_fields[4] + DELIMITER + request_fields[5]);
 						break;
 					case 2:
 						//Exchange Views
+						// [2] - Remote server's view
+						System.out.println("SERVER Received viewMerge request from server at " + recv_pkt.getAddress().getHostAddress() + "for view ("  + request_fields[2] +")");
+						response_value = SSMServlet.serverViewTable.toString();
+						SSMServlet.serverViewTable.mergeViews(request_fields[2]);
 						break;
 				}
 			} catch(Exception e){

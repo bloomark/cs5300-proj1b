@@ -54,13 +54,13 @@ public class ServerViewTable {
 		if(viewB.length() == 0)
 			return;
 		
-		String[] ipToEntriesOfB = viewB.split(java.util.regex.Pattern.quote(","));
+		String[] ipToEntriesOfB = viewB.trim().split(java.util.regex.Pattern.quote(","));
 		
 		for(String ipEntry : ipToEntriesOfB)
 		{
 			//constructing view table entry of B	
 			ServerViewTableEntry viewBEntry = constructTableEntryHelper(ipEntry);
-			String ip = ipEntry.split(java.util.regex.Pattern.quote(">"))[0];
+			String ip = ipEntry.trim().split(java.util.regex.Pattern.quote(">"))[0];
 					
 			if(serverViewTable.containsKey(ip))
 			{
@@ -78,12 +78,16 @@ public class ServerViewTable {
 	
 	private ServerViewTableEntry constructTableEntryHelper(String entry)
 	{
-		String[] entries = entry.split(java.util.regex.Pattern.quote(">"));
+		String[] entries = entry.trim().split(java.util.regex.Pattern.quote(">"));
 		
-		String[] status_timestamp = entries[1].split(java.util.regex.Pattern.quote("_"));
+		String[] status_timestamp = entries[1].trim().split(java.util.regex.Pattern.quote(ServerViewTableEntry.DELIMITER));
 		
-		Boolean status = Boolean.valueOf(status_timestamp[0]);
-		long timestamp = Long.valueOf(status_timestamp[1]);
+		//Boolean status = Boolean.valueOf(status_timestamp[0]);
+		Boolean status = null;
+		if(status_timestamp[0].trim().equals("1")) status = true;
+		else status = false;
+		
+		long timestamp = Long.valueOf(status_timestamp[1].trim());
 		
 		return new ServerViewTableEntry(status, timestamp);
 	}

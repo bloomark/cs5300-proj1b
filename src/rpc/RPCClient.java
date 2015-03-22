@@ -127,10 +127,18 @@ public class RPCClient {
 		return response_fields[1];
 	}
 	
-	/*
-	public static void ExchangeViews(
-				View v
+	public static String ExchangeViewsClient(
+				String server_view_string,
+				String server
 			){
+		String callId = UUID.randomUUID().toString();
+		String operation_code = "2";
 		
-	}*/
+		System.out.println("CLIENT Building request string");
+		String request_message = callId + DELIMITER + operation_code + DELIMITER + server_view_string;
+		byte[] outbuf = new byte[MAX_PACKET_LENGTH];
+		outbuf = request_message.getBytes();
+		
+		return RPC(callId, server, outbuf);
+	}
 }

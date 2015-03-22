@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.Timer;
 //import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Exchanger;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -30,7 +31,8 @@ public class SSMServlet extends HttpServlet {
 	public static String globalSessionId = "0";
 	public static ConcurrentHashMap<String, SessionData> sessionMap = new ConcurrentHashMap<String, SessionData>();
 	public static long cleanerDaemonInterval = 60 * 1000;
-	   
+	public static ServerViewTable serverViewTable = new ServerViewTable();
+	
     /**
      * @see HttpServlet#HttpServlet()
      */
@@ -59,12 +61,13 @@ public class SSMServlet extends HttpServlet {
         }
         else{
         	System.out.println("TEST sessionWrite FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        }*/
+        }//*/
         
         /*
          * Test for sessionRead
          */
-        /*SessionData new_entry = new SessionData(100, "Fubar", System.currentTimeMillis(), "127.0.0.1", "NULL");
+        /*
+        SessionData new_entry = new SessionData(100, "Fubar", System.currentTimeMillis());
         sessionMap.put("100", new_entry);
         SessionData read_response = readRemoteSessionData("100", "127.0.0.1", "null");
         if(read_response == null){
@@ -76,7 +79,18 @@ public class SSMServlet extends HttpServlet {
         read_response = readRemoteSessionData("101", "127.0.0.1", "null");
         if(read_response != null){
         	System.out.println("TEST sessionRead FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        }*/
+        }//*/
+        
+        /*
+         * Test for mergeView
+         */
+        ServerViewTableEntry new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        serverViewTable.serverViewTable.put("10.0.0.1", new_view_entry);
+        new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        serverViewTable.serverViewTable.put("10.0.0.2", new_view_entry);
+        System.out.println(serverViewTable.toString());
+        mergeViewTable();
+        System.out.println(serverViewTable.toString());
     }
 
 	/**
@@ -230,5 +244,14 @@ public class SSMServlet extends HttpServlet {
 		else{
 			return null;
 		}
+	}
+	
+	private void mergeViewTable(){
+		/*
+		 * Pick up a random IP address, and call the RPC mergeViewsClient
+		 */
+		String server = "127.0.0.1";
+		String remote_server_view_string = RPCClient.ExchangeViewsClient(serverViewTable.toString(), server);
+		serverViewTable.mergeViews(remote_server_view_string);
 	}
 }

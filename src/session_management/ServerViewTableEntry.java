@@ -3,14 +3,13 @@ package session_management;
 public class ServerViewTableEntry {
 	Boolean status;
 	long timestamp;
-	public static String DELIMITER = "_";
+	public static String DELIMITER = "+";
 	
 	public ServerViewTableEntry(Boolean status, long time)
 	{
 		this.status = status;
 		this.timestamp = time;
 	}
-
 
 	public Boolean getStatus() {
 		return this.status;
@@ -35,6 +34,9 @@ public class ServerViewTableEntry {
 	
 	@Override
 	public String toString() {
-		return this.status.toString() + DELIMITER + String.valueOf(this.timestamp);
+		if(this.status)
+			return "1" + DELIMITER + String.valueOf(this.timestamp); 
+		else
+			return "0" + DELIMITER + String.valueOf(this.timestamp);
 	}
 }
