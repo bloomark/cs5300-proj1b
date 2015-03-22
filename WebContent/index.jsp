@@ -21,6 +21,8 @@
 	            	var value = c.substring(name.length,c.length);
 	            	document.getElementById('sessionId').innerHTML = value.split('_')[0];
 	            	document.getElementById('version').innerHTML = value.split('_')[1];
+	            	document.getElementById('primary').innerHTML = value.split('_')[2];
+	            	document.getElementById('backup').innerHTML = value.split('_')[3];
 	            	return value;
 	            }
 	        }
@@ -50,6 +52,10 @@
         			<dd id='version'></dd>
 	        		<dt>Expires on</dt>
     	    		<dd>${expiresOn}</dd>
+    	    		<dt>Primary</dt>
+    	    		<dd id='primary'></dd>
+    	    		<dt>Backup</dt>
+    	    		<dd id='backup'></dd>
         		</dl>
         	</div>
         </form>

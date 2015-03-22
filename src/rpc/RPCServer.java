@@ -54,8 +54,8 @@ public class RPCServer extends Thread{
 				 * [0] - callId
 				 * [1] - operation_code
 				 */
+				SSMServlet.serverViewTable.upsertViewTableEntry(recv_pkt.getAddress().getHostAddress(), true, System.currentTimeMillis());
 				request_fields = sanitizeMessage(recv_pkt.getData());
-				
 				switch(Integer.valueOf(request_fields[1])){
 					case 0:
 						//Session Read
@@ -74,8 +74,7 @@ public class RPCServer extends Thread{
 						//Exchange Views
 						// [2] - Remote server's view
 						System.out.println("SERVER Received viewMerge request from server at " + recv_pkt.getAddress().getHostAddress() + "for view ("  + request_fields[2] +")");
-						response_value = SSMServlet.serverViewTable.toString();
-						SSMServlet.serverViewTable.mergeViews(request_fields[2]);
+						response_value = mergeViews(request_fields[2]);
 						break;
 				}
 			} catch(Exception e){
@@ -119,6 +118,16 @@ public class RPCServer extends Thread{
 		SSMServlet.sessionMap.put(sessionId, new_table_entry);
 		
 		return "OK";
+	}
+	
+	private String mergeViews(String remote_server_view){
+		SSMServlet.serverViewTable.mergeViews(remote_server_view);
+		if(SSMServlet.serverViewTable.isEmpty()){
+			return "NULL";
+		}
+		else{
+			return SSMServlet.serverViewTable.toString();
+		}
 	}
 	
 	private String[] sanitizeMessage(byte[] inbuf){

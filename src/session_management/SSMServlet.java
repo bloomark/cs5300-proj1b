@@ -1,7 +1,11 @@
 package session_management;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.sql.Timestamp;
 import java.util.Timer;
 //import java.util.UUID;
@@ -32,6 +36,8 @@ public class SSMServlet extends HttpServlet {
 	public static ConcurrentHashMap<String, SessionData> sessionMap = new ConcurrentHashMap<String, SessionData>();
 	public static long cleanerDaemonInterval = 60 * 1000;
 	public static ServerViewTable serverViewTable = new ServerViewTable();
+	public static String network_address = null;
+	public static String DELIMITER = SessionData.DELIMITER;
 	
     /**
      * @see HttpServlet#HttpServlet()
@@ -42,6 +48,13 @@ public class SSMServlet extends HttpServlet {
         SessionData newTableEntry = new SessionData(1, "deadbeef!", System.currentTimeMillis() + 84000000);
         sessionMap.put("100", newTableEntry);
         
+        do{
+        	getNetworkAddress();
+        } while(network_address == null);
+        ServerViewTableEntry new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        serverViewTable.serverViewTable.put(network_address, new_view_entry);
+        System.out.println("SERVLET Local network address = " + network_address + "...");        
+        
         System.out.println("SERVLET Setting up cleaner task...");
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new MapCleanerDaemon(), 5*1000, cleanerDaemonInterval);
@@ -50,13 +63,16 @@ public class SSMServlet extends HttpServlet {
         RPCServer rpc_server = new RPCServer();
         rpc_server.start();
         
+        new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        serverViewTable.serverViewTable.put("54.152.93.46", new_view_entry);
+        
         /*
          * Test for sessionWrite
          * */
         /*
         SessionData write_data = new SessionData(99, "Foo", System.currentTimeMillis());
         String write_response = writeRemoteSessionData("105", write_data);
-        if(write_response.equals("OK")){
+        if(write_response != null && write_response.equals("OK")){
         	System.out.println("TEST Object at 105 is " + sessionMap.get("105").toString());
         }
         else{
@@ -85,13 +101,16 @@ public class SSMServlet extends HttpServlet {
          * Test for mergeView
          */
         ///*
-        ServerViewTableEntry new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        /*ServerViewTableEntry new_view_entry = new ServerViewTableEntry(false, 10);
         serverViewTable.serverViewTable.put("10.0.0.1", new_view_entry);
-        new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        new_view_entry = new ServerViewTableEntry(true, 5);
         serverViewTable.serverViewTable.put("10.0.0.2", new_view_entry);
+        new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
+        serverViewTable.serverViewTable.put("10.0.0.4", new_view_entry);
+        
         System.out.println(serverViewTable.toString());
-        mergeViewTable();
-        System.out.println(serverViewTable.toString());//*/
+        //mergeViewTable();
+        //System.out.println(serverViewTable.toString());//*/
     }
 
 	/**
@@ -102,6 +121,8 @@ public class SSMServlet extends HttpServlet {
 		String sessionID = null;
 		Integer version = 1;
 		long expiresOn = 0;
+		String primary = null;
+		String backup = null;
 		String cookieContent = null;
 		Cookie cookie = null;
 		
@@ -176,19 +197,17 @@ public class SSMServlet extends HttpServlet {
 			}
 			
 			if(createNewCookie){
-				//System.out.println("Creating new cookie");
 				version = 1;
-				//sessionID = UUID.randomUUID().toString();
 				sessionID = getNewSessionId();
-				//System.out.println("New Session ID - " + sessionID);
 				//Increment timestamp by TIMEOUT milliseconds
 				expiresOn = System.currentTimeMillis() + TIMEOUT;
-				//System.out.println("Expires On - " + expiresOn.toString());
 				SessionData newTableEntry = new SessionData(1, "Hello, User!", expiresOn);
 				sessionMap.put(sessionID, newTableEntry);
 			}
 			
-			cookieContent = sessionID + '_' + version;
+			backup = writeRemoteSessionData(sessionID, sessionMap.get(sessionID));
+			
+			cookieContent = sessionID + DELIMITER + version + DELIMITER + network_address + DELIMITER + backup;
 			Cookie session = new Cookie(COOKIE_NAME, cookieContent);
 			response.addCookie(session);
 		}
@@ -211,14 +230,14 @@ public class SSMServlet extends HttpServlet {
 
 	private String getNewSessionId(){
 		globalSessionId = String.valueOf(Integer.valueOf(globalSessionId) + 1);
-		return globalSessionId;
+		return network_address + "." + globalSessionId;
 	}
 	
 	private SessionData readRemoteSessionData(String sessionId, String primary, String backup){
 		String new_session_string = null;
 		
-		new_session_string = RPCClient.SessionReadClient(sessionId, primary);
-		if(new_session_string.trim().equals("NULL")){
+		new_session_string = RPCClient.SessionReadClient(sessionId, primary).trim();
+		if(new_session_string.equals("NULL") || new_session_string.equals("ERROR")){
 			return null;
 			/*new_session_string = RPCClient.SessionReadClient(sessionId, backup);
 			if(new_session_string == null){
@@ -235,15 +254,21 @@ public class SSMServlet extends HttpServlet {
 		 * Pick a random server from the view, for now lets make it 127.0.0.1
 		 * String server = random_entry_from_view
 		 */
-		String server = "127.0.0.1";
-		sessionData.expiresOn = System.currentTimeMillis() + TIMEOUT + DELTA;
-		String result = RPCClient.SessionWriteClient(sessionId, sessionData.toString(), server);
+		String server = serverViewTable.getRandomKey();
 		
-		if(result.trim().equals("OK")){
-			return "OK";
+		if(server == "NULL"){
+			System.out.println("SERVER Could not find a backup");
+			return "NULL";
+		}
+		
+		sessionData.expiresOn = System.currentTimeMillis() + TIMEOUT + DELTA;
+		String result = RPCClient.SessionWriteClient(sessionId, sessionData.toString(), server).trim();
+		
+		if(result.equals("OK")){
+			return server;
 		}
 		else{
-			return null;
+			return "NULL";
 		}
 	}
 	
@@ -252,7 +277,39 @@ public class SSMServlet extends HttpServlet {
 		 * Pick up a random IP address, and call the RPC mergeViewsClient
 		 */
 		String server = "127.0.0.1";
-		String remote_server_view_string = RPCClient.ExchangeViewsClient(serverViewTable.toString(), server);
-		serverViewTable.mergeViews(remote_server_view_string);
+		String remote_server_view_string = RPCClient.ExchangeViewsClient(serverViewTable.toString(), server).trim();
+		if(!remote_server_view_string.equals("ERROR") || !remote_server_view_string.equals("NULL")){
+			serverViewTable.mergeViews(remote_server_view_string);
+		}
+	}
+	
+	public void getNetworkAddress(){
+		/*
+		 * From http://stackoverflow.com/questions/2939218/getting-the-external-ip-address-in-java
+		 */
+		URL whatismyip = null;
+		try {
+			whatismyip = new URL("http://checkip.amazonaws.com");
+		} catch (MalformedURLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			return;
+		}
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(
+                    whatismyip.openStream()));
+            network_address = in.readLine();
+        } catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 	}
 }

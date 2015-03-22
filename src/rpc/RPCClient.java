@@ -10,11 +10,12 @@ import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+import session_management.SSMServlet;
 import session_management.SessionData;
 
 public class RPCClient {
 	public static int RPC_SERVER_PORT = 5300;
-	public static int SOCKET_TIMEOUT = 5 * 1000;
+	public static int SOCKET_TIMEOUT = 2 * 1000;
 	public static int MAX_PACKET_LENGTH = 512;
 	public static String DELIMITER = SessionData.DELIMITER;
 	
@@ -90,6 +91,7 @@ public class RPCClient {
 		}
 		
 		String[] response_fields = null;
+		boolean error = false;
 		
 		/*
 		 * Waiting for a response from the server
@@ -105,24 +107,32 @@ public class RPCClient {
 				
 				System.out.println("CLIENT Waiting for response/");
 				rpc_socket.receive(rcv_pkt);
-				
+				System.out.println("A");
 				response_fields = new String(inbuf, "UTF-8").split(DELIMITER, 2);
 				System.out.println("CLIENT Received response " + new String(inbuf, "UTF-8"));
 			} while(!response_fields[0].equals(callId));
 		} catch(SocketTimeoutException e){
-			// TODO Auto-generated catch block
-			System.out.println("CLIENT serverReadClient response timed out");
+			//e.printStackTrace();
+			SSMServlet.serverViewTable.upsertViewTableEntry(server, false, System.currentTimeMillis());
+			error = true;
 		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
+			SSMServlet.serverViewTable.upsertViewTableEntry(server, false, System.currentTimeMillis());
+			error = true;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
+			SSMServlet.serverViewTable.upsertViewTableEntry(server, false, System.currentTimeMillis());
+			error = true;
 		} catch (NullPointerException e){
-			e.printStackTrace();
+			//e.printStackTrace();
+			SSMServlet.serverViewTable.upsertViewTableEntry(server, false, System.currentTimeMillis());
+			error = true;
 		}
 		
 		rpc_socket.close();
+		
+		if(error) return "ERROR";
+		
 		System.out.println("CLIENT Returning " + response_fields[1]);
 		return response_fields[1];
 	}

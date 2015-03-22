@@ -1,6 +1,8 @@
 package session_management;
 
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.sun.org.apache.xalan.internal.xsltc.compiler.Pattern;
@@ -51,7 +53,7 @@ public class ServerViewTable {
 	 */
 	public void mergeViews(String viewB)
 	{
-		if(viewB.length() == 0)
+		if(viewB == null || viewB.length() == 0)
 			return;
 		
 		String[] ipToEntriesOfB = viewB.trim().split(java.util.regex.Pattern.quote(","));
@@ -74,6 +76,7 @@ public class ServerViewTable {
 			}
 		}
 		
+		System.out.println("Table after mreging - " + this.toString());
 	}
 	
 	private ServerViewTableEntry constructTableEntryHelper(String entry)
@@ -90,5 +93,34 @@ public class ServerViewTable {
 		long timestamp = Long.valueOf(status_timestamp[1].trim());
 		
 		return new ServerViewTableEntry(status, timestamp);
+	}
+	
+	public boolean isEmpty(){
+		return serverViewTable.isEmpty();
+	}
+	
+	public String getRandomKey(){
+		/*
+		 * From http://stackoverflow.com/questions/12385284/how-to-select-a-random-key-from-a-hashmap-in-java
+		 */
+		
+		String randomIP = null;
+		ArrayList<String> key_list = new ArrayList<String>();
+		Random r = new Random();
+		
+		for(String key : serverViewTable.keySet()){
+			if(serverViewTable.get(key).getStatus()){
+				key_list.add(key);
+			}
+		}
+		
+		if(key_list.size() <= 1) return "NULL";
+		
+		do{
+			randomIP = key_list.get(r.nextInt(key_list.size()));
+			System.out.println("RandomIP = " + randomIP);
+		} while(randomIP.equals(SSMServlet.network_address)); 
+			
+		return randomIP;
 	}
 }
