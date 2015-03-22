@@ -84,13 +84,14 @@ public class SSMServlet extends HttpServlet {
         /*
          * Test for mergeView
          */
+        ///*
         ServerViewTableEntry new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
         serverViewTable.serverViewTable.put("10.0.0.1", new_view_entry);
         new_view_entry = new ServerViewTableEntry(true, System.currentTimeMillis());
         serverViewTable.serverViewTable.put("10.0.0.2", new_view_entry);
         System.out.println(serverViewTable.toString());
         mergeViewTable();
-        System.out.println(serverViewTable.toString());
+        System.out.println(serverViewTable.toString());//*/
     }
 
 	/**
