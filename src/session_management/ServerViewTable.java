@@ -27,7 +27,7 @@ public class ServerViewTable {
 	
 	/*
 	 * Entire view table as a string for exchanging views
-	 * format ipaddress1>status1_timestamp2,ipaddress2>status2_timestamp2,ipaddress3>status3_timestamp3
+	 * format ipaddress1>status1+timestamp2,ipaddress2>status2+timestamp2,ipaddress3>status3+timestamp3
 	 */
 	@Override
 	public String toString() {

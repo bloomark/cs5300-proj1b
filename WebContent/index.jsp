@@ -1,3 +1,4 @@
+<%@page import="session_management.SSMServlet"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -59,6 +60,32 @@
         		</dl>
         	</div>
         </form>
+        <h2>Server View</h2>
+        <table>
+        	<tr>
+        		<th>Address</th>
+        		<th>Status</th>
+        		<th>Last Seen</th>
+        	</tr>
+        <%
+        	String server_view = SSMServlet.serverViewTable.toString();
+        	String[] view_entries = server_view.split(java.util.regex.Pattern.quote(","));
+        	for(String entry : view_entries){
+        		String address = entry.split(java.util.regex.Pattern.quote(">"))[0];
+        		String status = entry.split(java.util.regex.Pattern.quote(">"))[1].split(java.util.regex.Pattern.quote("+"))[0];
+        		if(status.equals("1")) status = "UP";
+        		else status = "DOWN";
+        		String lastSeen = entry.split(java.util.regex.Pattern.quote(">"))[1].split(java.util.regex.Pattern.quote("+"))[1];
+        %>
+        	<tr>
+        		<td><%=address %></td>
+        		<td><%=status %></td>
+        		<td><%=lastSeen %></td>
+        	</tr>
+        <%
+        	}
+        %>
+        </table>
     </div>
 </body>
 </html>

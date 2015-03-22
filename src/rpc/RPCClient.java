@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.util.UUID;
 
 import session_management.SSMServlet;
+import session_management.ServerViewTable;
 import session_management.SessionData;
 
 public class RPCClient {
@@ -99,15 +100,14 @@ public class RPCClient {
 		 * If the socket times out, update server status to down
 		 */
 		try{
-			System.out.println("CLIENT Waiting for response");
 			do{
 				rpc_socket.setSoTimeout(SOCKET_TIMEOUT);
 				byte[] inbuf = new byte[MAX_PACKET_LENGTH];
 				DatagramPacket rcv_pkt = new DatagramPacket(inbuf, inbuf.length);
 				
-				System.out.println("CLIENT Waiting for response/");
+				System.out.println("CLIENT Waiting for response");
 				rpc_socket.receive(rcv_pkt);
-				System.out.println("A");
+				
 				response_fields = new String(inbuf, "UTF-8").split(DELIMITER, 2);
 				System.out.println("CLIENT Received response " + new String(inbuf, "UTF-8"));
 			} while(!response_fields[0].equals(callId));
@@ -134,6 +134,7 @@ public class RPCClient {
 		if(error) return "ERROR";
 		
 		System.out.println("CLIENT Returning " + response_fields[1]);
+		SSMServlet.serverViewTable.upsertViewTableEntry(server, true, System.currentTimeMillis());
 		return response_fields[1];
 	}
 	
